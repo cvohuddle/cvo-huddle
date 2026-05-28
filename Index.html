@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CVO Huddle Notes — Search</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#0c2340;--navy2:#153a60;--teal:#006b77;
+  --bg:#f0f2f5;--surface:#fff;--border:#dde1e7;
+  --text:#1a2332;--muted:#6b7280;--light:#9ca3af;
+  --danger:#b91c1c;--green:#166534;--amber:#92400e;
+  --r:10px;--rs:6px;
+}
+html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);}
+body{display:flex;flex-direction:column;}
+
+/* Header */
+.hdr{background:var(--navy);color:#fff;padding:12px 24px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;gap:12px;}
+.hdr-brand{display:flex;align-items:center;gap:12px;}
+.hdr-logo{width:38px;height:38px;background:#fff;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--navy);flex-shrink:0;}
+.hdr-title{font-size:15px;font-weight:600;line-height:1.2;}
+.hdr-sub{font-size:11px;opacity:.65;margin-top:2px;}
+.hdr-right{display:flex;align-items:center;gap:10px;flex-shrink:0;}
+.hdr-status{font-size:12px;opacity:.85;text-align:right;line-height:1.4;}
+.hdr-btn{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:5px 12px;border-radius:var(--rs);font-size:12px;cursor:pointer;font-family:inherit;}
+.hdr-btn:hover{background:rgba(255,255,255,.22);}
+
+/* Search bar */
+.search-bar{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 20px;display:flex;gap:10px;align-items:center;flex-shrink:0;}
+.search-wrap{flex:1;position:relative;}
+.search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--light);font-size:16px;pointer-events:none;}
+.search-input{width:100%;padding:10px 12px 10px 38px;border:1px solid var(--border);border-radius:var(--rs);font-size:15px;font-family:inherit;outline:none;transition:border-color .15s;}
+.search-input:focus{border-color:var(--teal);}
+.clear-search{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--light);cursor:pointer;font-size:18px;line-height:1;padding:2px;}
+.clear-search:hover{color:var(--muted);}
+
+/* Filters */
+.filters{background:var(--surface);border-bottom:1px solid var(--border);padding:10px 20px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;flex-shrink:0;}
+.filter-label{font-size:12px;color:var(--muted);margin-right:2px;white-space:nowrap;}
+.filter-btn{padding:5px 12px;border:1px solid var(--border);border-radius:20px;background:var(--surface);font-size:12px;color:var(--muted);cursor:pointer;font-family:inherit;white-space:nowrap;transition:all .15s;}
+.filter-btn:hover{border-color:var(--navy);color:var(--navy);}
+.filter-btn.active{background:var(--navy);color:#fff;border-color:var(--navy);}
+
+/* Results area */
+.results-wrap{flex:1;overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:2px;}
+
+/* Stats bar */
+.stats{font-size:12px;color:var(--muted);padding:4px 0 10px;display:flex;justify-content:space-between;align-items:center;}
+.sort-select{font-size:12px;border:1px solid var(--border);border-radius:var(--rs);padding:4px 8px;color:var(--muted);background:var(--surface);cursor:pointer;font-family:inherit;outline:none;}
+
+/* Result card */
+.result-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;margin-bottom:8px;transition:border-color .15s;}
+.result-card:hover{border-color:#94a3b8;}
+.result-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:8px;flex-wrap:wrap;}
+.result-area{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;padding:3px 8px;border-radius:20px;background:#e8edf5;color:var(--navy);white-space:nowrap;}
+.result-meta{font-size:12px;color:var(--light);text-align:right;line-height:1.5;white-space:nowrap;}
+.result-topic{font-size:14px;font-weight:600;color:var(--text);margin-bottom:6px;line-height:1.4;}
+.result-disc{font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:0;}
+.result-action{font-size:13px;color:var(--teal);line-height:1.6;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);}
+.result-action-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--teal);margin-right:4px;}
+mark{background:#fef08a;border-radius:2px;padding:0 1px;}
+
+/* Empty / loading states */
+.state-msg{text-align:center;padding:48px 20px;color:var(--muted);}
+.state-msg .icon{font-size:36px;margin-bottom:12px;}
+.state-msg h3{font-size:16px;font-weight:600;color:var(--text);margin-bottom:6px;}
+.state-msg p{font-size:14px;line-height:1.6;}
+.spinner{display:inline-block;width:22px;height:22px;border:3px solid var(--border);border-top-color:var(--navy);border-radius:50%;animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;vertical-align:middle;}
+.dot-g{background:#22c55e;}.dot-a{background:#f59e0b;}.dot-r{background:#ef4444;}
+
+/* Error */
+.err-box{background:#fef2f2;border:1px solid #fca5a5;border-radius:var(--rs);padding:12px 14px;font-size:13px;color:var(--danger);line-height:1.6;margin-bottom:12px;}
+
+/* Modal */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px;}
+.modal{background:#fff;border-radius:var(--r);padding:26px;max-width:540px;width:100%;max-height:85vh;overflow-y:auto;}
+.modal-title{font-size:16px;font-weight:600;margin-bottom:4px;}
+.modal-sub{font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.5;}
+.modal-step{display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--muted);margin-bottom:12px;line-height:1.5;}
+.modal-step-n{min-width:22px;height:22px;border-radius:50%;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;margin-top:1px;flex-shrink:0;}
+.modal textarea{width:100%;height:130px;padding:10px;border:1px solid var(--border);border-radius:var(--rs);font-size:13px;font-family:monospace;resize:vertical;outline:none;margin-bottom:4px;}
+.modal textarea:focus{border-color:var(--teal);}
+.modal-hint{font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.4;}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;}
+.btn-outline{background:none;border:1px solid var(--border);color:var(--muted);padding:8px 16px;border-radius:var(--rs);font-size:13px;cursor:pointer;font-family:inherit;}
+.btn-outline:hover{border-color:var(--navy);color:var(--navy);}
+.btn-solid{background:var(--navy);color:#fff;border:none;padding:8px 18px;border-radius:var(--rs);font-size:13px;cursor:pointer;font-family:inherit;}
+.btn-solid:hover{background:var(--navy2);}
+.btn-solid:disabled{opacity:.45;cursor:not-allowed;}
+
+/* Config screen */
+.cfg-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:24px;}
+.cfg-card{background:var(--surface);border-radius:var(--r);border:1px solid var(--border);padding:28px;max-width:520px;width:100%;}
+.cfg-title{font-size:20px;font-weight:600;margin-bottom:6px;}
+.cfg-sub{font-size:14px;color:var(--muted);margin-bottom:22px;line-height:1.5;}
+.cfg-code{background:#f8f9fb;border:1px solid var(--border);border-radius:var(--rs);padding:14px;font-family:monospace;font-size:12px;line-height:1.8;margin-bottom:16px;}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════
+     CONFIGURATION — Replace token value below
+     ═══════════════════════════════════════════ -->
+<script>
+const CONFIG = {
+  SMARTSHEET_TOKEN: "8728QPDV5sbtx4aZ7SE9Hk4WUNIfnOdOWRDXy",
+  SHEET_ID: "5706152189841284"
+};
+</script>
+<!-- ═══════════════════════════════════════════ -->
+
+<div id="app"></div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────
+let S = {
+  status: "loading",   // loading | ready | error
+  rows: [],
+  syncTime: null,
+  syncError: "",
+  query: "",
+  activeArea: "All",
+  sortOrder: "newest",
+  modal: null,
+  pasteBuffer: "",
+  pasteError: ""
+};
+
+// ── Fetch from Smartsheet ──────────────────────────────────────────
+async function fetchSmartsheet() {
+  S.status = "loading"; S.syncError = ""; render();
+  try {
+    const res = await fetch(
+      `https://api.smartsheet.com/2.0/sheets/${CONFIG.SHEET_ID}`,
+      { headers: { "Authorization": "Bearer " + CONFIG.SMARTSHEET_TOKEN } }
+    );
+    if (!res.ok) {
+      const e = await res.json().catch(() => ({}));
+      throw new Error(e.message || `HTTP ${res.status}`);
+    }
+    const data = await res.json();
+    S.rows = parseSheet(data);
+    S.syncTime = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    S.status = "ready";
+  } catch(e) {
+    S.syncError = e.message;
+    S.status = S.rows.length > 0 ? "ready" : "error";
+  }
+  render();
+}
+
+function parseSheet(data) {
+  const cm = {};
+  (data.columns || []).forEach(c => { cm[c.id] = c.title; });
+  const rows = [];
+  (data.rows || []).forEach(row => {
+    const d = {};
+    (row.cells || []).forEach(cell => {
+      const n = cm[cell.columnId];
+      if (n && cell.value != null && cell.value !== "") d[n] = String(cell.value);
+    });
+    const disc = d["Discussion"] || d["discussion"] || "";
+    const act  = d["Action"]     || d["action"]     || "";
+    const top  = d["Topic"]      || d["topic"]       || "";
+    if (!disc && !act && !top) return;
+    const rawDate = d["Date"] || d["Discussion Date"] || "";
+    rows.push({
+      area:       d["Area in MD-Staff"] || d["Area"] || "General",
+      topic:      top,
+      status:     d["Status"] || "",
+      by:         d["Logged By"] || d["Logged by"] || "",
+      date:       rawDate,
+      dateSort:   parseDate(rawDate),
+      discussion: disc,
+      action:     act
+    });
+  });
+  return rows;
+}
+
+function parsePaste(raw) {
+  const lines = raw.split("\n").filter(l => l.trim());
+  if (lines.length < 2) return [];
+  const sep = lines[0].includes("\t") ? "\t" : ",";
+  const headers = lines[0].split(sep).map(h => h.replace(/^"|"$/g,"").trim());
+  const idx = {};
+  ["Discussion","Action","Topic","Area in MD-Staff","Area","Logged By","Logged by","Date","Discussion Date","Status"]
+    .forEach(k => { const i = headers.indexOf(k); if (i >= 0) idx[k] = i; });
+  const rows = [];
+  for (let i = 1; i < lines.length; i++) {
+    const cols = lines[i].split(sep).map(c => c.replace(/^"|"$/g,"").trim());
+    const get = (...keys) => { for (const k of keys) if (idx[k] !== undefined && cols[idx[k]]) return cols[idx[k]]; return ""; };
+    const disc = get("Discussion"), act = get("Action"), top = get("Topic");
+    if (!disc && !act && !top) continue;
+    const rawDate = get("Date","Discussion Date");
+    rows.push({ area: get("Area in MD-Staff","Area") || "General", topic: top, status: get("Status"), by: get("Logged By","Logged by"), date: rawDate, dateSort: parseDate(rawDate), discussion: disc, action: act });
+  }
+  return rows;
+}
+
+function parseDate(raw) {
+  if (!raw) return 0;
+  // Excel serial number
+  if (/^\d{5}\.?\d*$/.test(raw)) {
+    const n = parseFloat(raw);
+    if (n > 40000 && n < 50000) return (n - 25569) * 86400000;
+  }
+  // Try direct parse
+  const d = new Date(raw);
+  return isNaN(d) ? 0 : d.getTime();
+}
+
+function formatDate(raw, dateSort) {
+  if (!raw) return "";
+  if (/^\d{5}\.?\d*$/.test(raw) && dateSort) {
+    return new Date(dateSort).toLocaleDateString("en-US", { month: "short", year: "numeric" });
+  }
+  return raw;
+}
+
+// ── Search & filter ────────────────────────────────────────────────
+function getAreas() {
+  const areas = ["All", ...new Set(S.rows.map(r => r.area).filter(Boolean).map(a => a.replace(/^_/,"").trim()))].sort();
+  return areas;
+}
+
+function getFiltered() {
+  let rows = [...S.rows];
+
+  // Area filter
+  if (S.activeArea !== "All") {
+    rows = rows.filter(r => r.area.replace(/^_/,"").trim() === S.activeArea);
+  }
+
+  // Keyword search
+  const q = S.query.trim().toLowerCase();
+  if (q) {
+    rows = rows.filter(r =>
+      [r.topic, r.discussion, r.action, r.area, r.by, r.status].some(f => f && f.toLowerCase().includes(q))
+    );
+  }
+
+  // Sort
+  if (S.sortOrder === "newest") {
+    rows.sort((a, b) => (b.dateSort || 0) - (a.dateSort || 0));
+  } else if (S.sortOrder === "oldest") {
+    rows.sort((a, b) => (a.dateSort || 0) - (b.dateSort || 0));
+  } else {
+    rows.sort((a, b) => (a.area || "").localeCompare(b.area || ""));
+  }
+
+  return rows;
+}
+
+function highlight(text, query) {
+  if (!query.trim() || !text) return esc(text);
+  const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return esc(text).replace(new RegExp(`(${escaped})`, "gi"), "<mark>$1</mark>");
+}
+
+// ── Helpers ────────────────────────────────────────────────────────
+function esc(s) { return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
+function truncate(s, n) {
+  if (!s || s.length <= n) return s;
+  return s.slice(0, n).trim() + "…";
+}
+
+// ── Render ─────────────────────────────────────────────────────────
+function render() {
+  const app = document.getElementById("app");
+  if (!app) return;
+
+  // Config check
+  if (CONFIG.SMARTSHEET_TOKEN === "PASTE_YOUR_SMARTSHEET_API_TOKEN_HERE") {
+    app.innerHTML = renderHeader() + `
+      <div class="cfg-wrap">
+        <div class="cfg-card">
+          <div class="cfg-title">⚙ One-time setup needed</div>
+          <div class="cfg-sub">Open this HTML file in Notepad and replace the placeholder with your Smartsheet API token:</div>
+          <div class="cfg-code">SMARTSHEET_TOKEN: <b>"PASTE_YOUR_SMARTSHEET_API_TOKEN_HERE"</b></div>
+          <div style="font-size:13px;color:var(--muted);line-height:1.7">
+            <b>To get your token:</b><br>
+            Smartsheet → Account (top-right) → Apps &amp; Integrations → API Access → <b>Generate new access token</b><br><br>
+            Save the file, re-upload to SharePoint, and it will work automatically from then on.
+          </div>
+        </div>
+      </div>`;
+    return;
+  }
+
+  if (S.status === "loading") {
+    app.innerHTML = renderHeader() + `
+      <div style="flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;padding:40px">
+        <div class="spinner"></div>
+        <div style="font-size:14px;color:var(--muted)">Loading huddle notes from Smartsheet…</div>
+      </div>`;
+    return;
+  }
+
+  if (S.status === "error") {
+    app.innerHTML = renderHeader() + `
+      <div style="flex:1;display:flex;align-items:center;justify-content:center;padding:24px">
+        <div class="cfg-card">
+          <div class="cfg-title">Could not connect to Smartsheet</div>
+          <div style="font-size:14px;color:var(--muted);margin-bottom:16px;line-height:1.5">Check that the token in the file is correct, or paste your data manually below.</div>
+          <div class="err-box">${esc(S.syncError)}</div>
+          <div style="margin-bottom:12px">
+            <div class="modal-step"><span class="modal-step-n">1</span>Open your sheet in Smartsheet → press <b>Ctrl+A</b> then <b>Ctrl+C</b></div>
+            <div class="modal-step"><span class="modal-step-n">2</span>Paste below and click Load</div>
+            <textarea id="err-paste" placeholder="Paste Smartsheet data here…" style="width:100%;height:110px;padding:10px;border:1px solid var(--border);border-radius:var(--rs);font-size:13px;font-family:monospace;resize:vertical;outline:none;margin-top:8px"></textarea>
+            <button class="btn-solid" style="width:100%;padding:10px;margin-top:8px" onclick="loadFromPaste(document.getElementById('err-paste').value)">Load data →</button>
+          </div>
+          <button class="btn-outline" style="width:100%;margin-top:6px" onclick="fetchSmartsheet()">↻ Retry connection</button>
+        </div>
+      </div>`;
+    return;
+  }
+
+  // Ready state
+  const filtered = getFiltered();
+  const areas = getAreas();
+  const q = S.query.trim();
+
+  const areaFilters = areas.map(a =>
+    `<button class="filter-btn ${S.activeArea===a?"active":""}" onclick="setArea('${esc(a)}')">${esc(a)}</button>`
+  ).join("");
+
+  const resultCards = filtered.length === 0
+    ? `<div class="state-msg">
+        <div class="icon">🔍</div>
+        <h3>No results found</h3>
+        <p>Try a different keyword or clear the area filter.</p>
+       </div>`
+    : filtered.map(r => {
+        const areaClean = r.area.replace(/^_/,"").trim();
+        const dateStr = formatDate(r.date, r.dateSort);
+        const discShort = truncate(r.discussion, 280);
+        const actShort  = truncate(r.action, 200);
+        return `
+          <div class="result-card">
+            <div class="result-top">
+              <span class="result-area">${esc(areaClean)}</span>
+              <span class="result-meta">${dateStr ? esc(dateStr) : ""}${r.by ? `<br>by ${esc(r.by)}` : ""}</span>
+            </div>
+            ${r.topic ? `<div class="result-topic">${highlight(r.topic, q)}</div>` : ""}
+            ${r.discussion ? `<div class="result-disc">${highlight(discShort, q)}</div>` : ""}
+            ${r.action ? `<div class="result-action"><span class="result-action-label">Action:</span>${highlight(actShort, q)}</div>` : ""}
+          </div>`;
+      }).join("");
+
+  app.innerHTML = renderHeader() + `
+    <div class="search-bar">
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input class="search-input" id="search-input" type="text" value="${esc(S.query)}"
+          placeholder="Search by keyword — e.g. BORM, NPDB, peer reference, insurance gap…" />
+        ${S.query ? `<button class="clear-search" onclick="clearSearch()" title="Clear">×</button>` : ""}
+      </div>
+    </div>
+
+    <div class="filters">
+      <span class="filter-label">Area:</span>
+      ${areaFilters}
+    </div>
+
+    <div class="results-wrap">
+      <div class="stats">
+        <span>
+          ${S.syncError ? `<span class="dot dot-a"></span>Offline data · ` : `<span class="dot dot-g"></span>Live · `}
+          <b>${filtered.length}</b> result${filtered.length!==1?"s":""}
+          ${q ? ` for "<b>${esc(q)}</b>"` : ""}
+          ${S.activeArea!=="All" ? ` in <b>${esc(S.activeArea)}</b>` : ""}
+        </span>
+        <select class="sort-select" onchange="setSort(this.value)">
+          <option value="newest" ${S.sortOrder==="newest"?"selected":""}>Newest first</option>
+          <option value="oldest" ${S.sortOrder==="oldest"?"selected":""}>Oldest first</option>
+          <option value="area"   ${S.sortOrder==="area"?"selected":""}>By area</option>
+        </select>
+      </div>
+      ${resultCards}
+    </div>
+
+    ${renderModal()}`;
+
+  // Wire up search input
+  const si = document.getElementById("search-input");
+  if (si) {
+    si.addEventListener("input", e => { S.query = e.target.value; render(); });
+    si.focus();
+  }
+}
+
+function renderHeader() {
+  const syncing = S.status === "loading";
+  const statusHtml = syncing
+    ? `<span class="spinner" style="width:12px;height:12px;border-width:2px"></span>`
+    : S.syncError && S.rows.length === 0
+      ? `<span class="dot dot-r"></span>Not connected`
+      : S.rows.length > 0
+        ? `<span class="dot dot-g"></span>${S.rows.length} rows · ${S.syncTime || "loaded"}`
+        : "";
+  return `
+    <div class="hdr">
+      <div class="hdr-brand">
+        <div class="hdr-logo">CVO</div>
+        <div>
+          <div class="hdr-title">CVO Huddle Notes</div>
+          <div class="hdr-sub">Beth Israel Lahey Health · Credentialing</div>
+        </div>
+      </div>
+      <div class="hdr-right">
+        <div class="hdr-status">${statusHtml}</div>
+        ${S.status==="ready" ? `<button class="hdr-btn" onclick="fetchSmartsheet()">↻ Refresh</button>` : ""}
+        ${S.status==="ready" ? `<button class="hdr-btn" onclick="openModal()">Paste update</button>` : ""}
+      </div>
+    </div>`;
+}
+
+function renderModal() {
+  if (S.modal !== "update") return "";
+  return `
+    <div class="overlay" onclick="if(event.target===this)closeModal()">
+      <div class="modal">
+        <div class="modal-title">Manually update huddle data</div>
+        <div class="modal-sub">Use this if auto-refresh fails or you want to load data immediately.</div>
+        <div class="modal-step"><span class="modal-step-n">1</span>Open your CVO Huddle Notes sheet in Smartsheet</div>
+        <div class="modal-step"><span class="modal-step-n">2</span>Press <b>Ctrl+A</b> to select all rows, then <b>Ctrl+C</b> to copy</div>
+        <div class="modal-step"><span class="modal-step-n">3</span>Click in the box below and press <b>Ctrl+V</b></div>
+        <textarea id="modal-paste" placeholder="Paste Smartsheet data here…" oninput="S.pasteBuffer=this.value">${esc(S.pasteBuffer)}</textarea>
+        ${S.pasteError ? `<div class="err-box" style="margin-bottom:10px">${esc(S.pasteError)}</div>` : ""}
+        <div class="modal-hint">The tool will automatically re-sync from Smartsheet every time the page is opened.</div>
+        <div class="modal-actions">
+          <button class="btn-outline" onclick="closeModal()">Cancel</button>
+          <button class="btn-solid" onclick="loadFromPaste(S.pasteBuffer)" ${!S.pasteBuffer.trim()?"disabled":""}>Load data →</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+// ── Actions ────────────────────────────────────────────────────────
+function setArea(a)    { S.activeArea = a; render(); }
+function setSort(v)    { S.sortOrder = v; render(); }
+function clearSearch() { S.query = ""; render(); }
+function openModal()   { S.modal = "update"; S.pasteBuffer = ""; S.pasteError = ""; render(); }
+function closeModal()  { S.modal = null; render(); }
+
+function loadFromPaste(raw) {
+  const rows = parsePaste(raw || "");
+  if (rows.length === 0) {
+    S.pasteError = "No rows found. Copy the full sheet from Smartsheet including the header row.";
+    render();
+    return;
+  }
+  S.rows = rows;
+  S.syncTime = new Date().toLocaleTimeString([], { hour:"2-digit", minute:"2-digit" }) + " (manual)";
+  S.syncError = ""; S.modal = null; S.status = "ready";
+  render();
+}
+
+// ── Boot ───────────────────────────────────────────────────────────
+window.addEventListener("DOMContentLoaded", () => {
+  if (CONFIG.SMARTSHEET_TOKEN === "PASTE_YOUR_SMARTSHEET_API_TOKEN_HERE") {
+    render(); return;
+  }
+  render();
+  fetchSmartsheet();
+});
+</script>
+</body>
+</html>
